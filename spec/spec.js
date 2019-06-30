@@ -1,11 +1,11 @@
 sleep = (milliseconds) => {
     return new Promise((resolve, reject) => {
-        setTimeout(resolve(), milliseconds);
+        setTimeout(reject(new Error(`rejected after ${milliseconds} ms`)), milliseconds);
     });
 };
 
 describe("test", function () {
-    it("test pass with delay", function () {
+    it("test fail with delay", function () {
         return sleep(2000);
     });
 });
