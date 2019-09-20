@@ -11,6 +11,7 @@
   "license": "ISC",
   "devDependencies": {
     "express": "^4.17.1",
-    "jasmine": "^3.4.0"
+    "jasmine": "^3.4.0",
+    "pg-promise": "^9.1.4"
   }
 }
