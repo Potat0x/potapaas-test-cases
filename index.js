@@ -39,7 +39,7 @@ sendResponse = (expressjsResponse, message, httpStatusCode = 200) => {
     expressjsResponse.send(message);
 };
 
-const testTableName = 'hello_world_intt2';
+const testTableName = 'hello_world_test_table';
 
 readIter = () => {
     return db.any(`SELECT iter FROM ${testTableName};`);
