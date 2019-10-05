@@ -1,37 +1,47 @@
+const mysql = require('mysql');
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 8080;
-const postgresPort = process.env.POSTGRES_PORT || 5432;
+const mysqlPort = process.env.MYSQL_PORT || 3306;
 
-const pgp = require('pg-promise')();
-const databaseHost = process.env.POSTGRES_HOST;
-const databasePassword = process.env.POSTGRES_PASSWORD;
-const db = pgp(`postgres://postgres:${databasePassword}@${databaseHost}:${postgresPort}/postgres`);
+const databaseHost = process.env.MYSQL_HOST;
+const databasePassword = process.env.MYSQL_PASSWORD;
 
-app.get('/', (req, res) => res.send('Hello World: nodejs+postgres'));
-
-app.get('/postgres-read-iter', (req, res) => {
-    return readIter()
-        .then(data => {
-            console.log('read iter: ' + JSON.stringify(data));
-            sendResponse(res, '' + data[0].iter);
-        })
-        .catch(error => sendResponse(res, 'read iter error: ' + error, 500));
+const connection = mysql.createConnection({
+    host: databaseHost,
+    port: mysqlPort,
+    user: 'root',
+    password: databasePassword,
+    database: 'mysql'
 });
 
-app.get('/postgres-increment-iter', (req, res) => {
-    return updateIter()
-        .then(() => sendResponse(res, 'iter incremented'))
-        .catch(error => sendResponse(res, 'increment iter error: ' + error, 500));
+connection.connect();
+
+app.get('/', (req, res) => res.send('Hello World: nodejs+mysql'));
+
+app.get('/read-iter', (req, res) => {
+    const onSuccess = data => {
+        console.log('read iter: ' + JSON.stringify(data));
+        sendResponse(res, '' + data[0].iter);
+    };
+    const onError = error => sendResponse(res, 'read iter error: ' + error, 500);
+    readIter(onSuccess, onError);
 });
 
-app.get('/postgres-init-iter', (req, res) => {
-    return createAndInitTestTableIfNotExists()
-        .then(() => sendResponse(res, 'test table initialized'))
-        .catch(error => sendResponse(res, 'init table error: ' + error, 500));
+app.get('/increment-iter', (req, res) => {
+    const onSuccess = () => sendResponse(res, 'iter incremented');
+    const onError = error => sendResponse(res, 'increment iter error: ' + error, 500);
+    updateIter(onSuccess, onError);
 });
 
-app.listen(port, () => console.log('Example app (nodejs+postgres) listening on port ' + port));
+app.get('/init-iter', (req, res) => {
+    return createAndInitTestTableIfNotExists(
+        () => sendResponse(res, 'test table initialized'),
+        error => sendResponse(res, 'init table error: ' + error, 500)
+    );
+});
+
+app.listen(port, () => console.log('Example app (nodejs+mysql) listening on port ' + port));
 
 sendResponse = (expressjsResponse, message, httpStatusCode = 200) => {
     console.log(message);
@@ -41,15 +51,36 @@ sendResponse = (expressjsResponse, message, httpStatusCode = 200) => {
 
 const testTableName = 'hello_world_test_table';
 
-readIter = () => {
-    return db.any(`SELECT iter FROM ${testTableName};`);
+readIter = (onSuccess, onError) => {
+    return connection.query(`SELECT iter FROM ${testTableName};`,
+        (error, results, fields) => {
+            if (results == undefined) {
+                onError(error);
+                return;
+            }
+            onSuccess(results);
+        });
 };
 
-updateIter = () => {
-    return db.none(`update ${testTableName} set iter = iter+1;`);
+updateIter = (onSuccess, onError) => {
+    return connection.query(`update ${testTableName} set iter = iter+1;`,
+        (error, results, fields) => {
+            if (results == undefined) {
+                onError(error);
+                return;
+            }
+            onSuccess();
+        });
 };
 
-createAndInitTestTableIfNotExists = () => {
-    return db.none(`create table if not exists ${testTableName}(iter int); 
-    insert into ${testTableName}(iter) select 0 where not exists (select 1 from ${testTableName});`);
+createAndInitTestTableIfNotExists = (onSuccess, onError) => {
+    connection.query(`create table if not exists ${testTableName}(iter int);`);
+    connection.query(`insert into ${testTableName} (iter) select 0 where not exists(select 1 from ${testTableName}); `,
+        (error, results, fields) => {
+            if (results == undefined) {
+                onError(error);
+                return;
+            }
+            onSuccess();
+        });
 };
