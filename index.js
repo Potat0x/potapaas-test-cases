@@ -10,7 +10,7 @@ const db = pgp(`postgres://postgres:${databasePassword}@${databaseHost}:${postgr
 
 app.get('/', (req, res) => res.send('Hello World: nodejs+postgres'));
 
-app.get('/postgres-read-iter', (req, res) => {
+app.get('/read-iter', (req, res) => {
     return readIter()
         .then(data => {
             console.log('read iter: ' + JSON.stringify(data));
@@ -19,13 +19,13 @@ app.get('/postgres-read-iter', (req, res) => {
         .catch(error => sendResponse(res, 'read iter error: ' + error, 500));
 });
 
-app.get('/postgres-increment-iter', (req, res) => {
+app.get('/increment-iter', (req, res) => {
     return updateIter()
         .then(() => sendResponse(res, 'iter incremented'))
         .catch(error => sendResponse(res, 'increment iter error: ' + error, 500));
 });
 
-app.get('/postgres-init-iter', (req, res) => {
+app.get('/init-iter', (req, res) => {
     return createAndInitTestTableIfNotExists()
         .then(() => sendResponse(res, 'test table initialized'))
         .catch(error => sendResponse(res, 'init table error: ' + error, 500));
