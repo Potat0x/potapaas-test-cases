@@ -75,7 +75,7 @@ updateIter = (onSuccess, onError) => {
 
 createAndInitTestTableIfNotExists = (onSuccess, onError) => {
     connection.query(`create table if not exists ${testTableName}(iter int);`);
-    connection.query(`insert into ${testTableName} (iter) select 0 where not exists(select 1 from ${testTableName}); `,
+    connection.query(`insert into ${testTableName} (iter) select 0 from dual where not exists(select 1 from ${testTableName});`,
         (error, results, fields) => {
             if (results == undefined) {
                 onError(error);
